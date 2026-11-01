@@ -1,6 +1,9 @@
 {
+  "clangd.enable": true,
+  "clangd.path": "clangd",
   "C_Cpp.intelliSenseEngine": "disabled",
   "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": false,
   "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
   "clangd.arguments": [
     "--compile-commands-dir=${workspaceFolder}",

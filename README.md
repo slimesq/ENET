@@ -14,6 +14,8 @@ ECloudAssistant 的 Linux 服务端源码，迁移自 `GOICDZDYLMRXH9QB_20250515
 
 ## 构建
 
+`ENET` 需要在 Linux 上编译和运行；Windows 本机的 CMake 预设被禁用。若在 Windows 的 VS Code 中打开此目录，按 `Ctrl+Shift+B` 会通过 SSH 把源码同步到 Linux 虚拟机并构建。默认目标为 `bit@192.168.32.129`，也可设置 `ENET_REMOTE_HOST` 环境变量。首次构建若缺 MariaDB 开发文件，脚本会在虚拟机用户的缓存目录下载并解包，不修改系统安装。生成的程序位于虚拟机的 `~/.cache/enet-vscode-build/ENET/build/make-debug/bin/`。
+
 在 Linux 环境中准备 CMake、Ninja、支持 C++17 的编译器、线程库，以及 MySQL 或 MariaDB 客户端开发文件，然后运行：
 
 ```sh
@@ -37,4 +39,4 @@ Release 使用 `linux-release` 预设。没有 Ninja 时可改用 `linux-make-de
 
 服务端入口与内部连接地址目前写为 `172.21.205.121`，ECloudAssistant 客户端中的负载及 RTMP 地址写为 `192.168.31.30`。应先统一地址、核对两端协议结构体，再验证四个服务的启动顺序和运行结果。编译成功本身不代表整套远程控制链已经通过联调。
 
-客户端学习路线及服务端对应阶段见 [`ECloudAssistant/docs/项目学习规划.md`](../ECloudAssistant/docs/项目学习规划.md)。
+本项目的分阶段学习路线、源码阅读顺序、实验与验收标准见 [项目学习规划](docs/项目学习规划.md)，其中也列出了 ECloudAssistant 客户端的对应阅读入口。
