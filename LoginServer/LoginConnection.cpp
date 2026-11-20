@@ -19,9 +19,14 @@ LoginConnection::~LoginConnection()
 
 bool LoginConnection::OnRead(BufferReader& buffer)
 {
-    if (buffer.ReadableBytes() > 0)
+    while (buffer.ReadableBytes() > 0)
     {
-        HandleMessage(buffer);
+        auto const before{buffer.ReadableBytes()};
+        this->HandleMessage(buffer);
+        if (buffer.ReadableBytes() == before)
+        {
+            break;
+        }
     }
     return true;
 }

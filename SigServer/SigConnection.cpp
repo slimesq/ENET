@@ -47,7 +47,7 @@ void SigConnection::RmoveCustom(std::string const& code)
     objectes_.erase(std::remove(objectes_.begin(), objectes_.end(), code), objectes_.end());
     if (objectes_.empty())
     {
-        state_ == IDLE;  //说明当前没有控制端，自己也不是控制端
+        state_ = IDLE;  //说明当前没有控制端，自己也不是控制端
     }
 }
 
@@ -55,7 +55,12 @@ bool SigConnection::OnRead(BufferReader& buffer)
 {
     while (buffer.ReadableBytes() > 0)
     {
-        HandleMessage(buffer);
+        auto const before{buffer.ReadableBytes()};
+        this->HandleMessage(buffer);
+        if (buffer.ReadableBytes() == before)
+        {
+            break;
+        }
     }
     return true;
 }
@@ -238,7 +243,7 @@ void SigConnection::DoObtainStream(packet_head const* data)
                 reply.SetCode(ERROR);
                 this->Send((char const*)&reply, reply.len);
                 break;
-            case PUSHER:                             //推流说明他是被控端，所以我们可以去拉流
+            case PUSHER:  //推流说明他是被控端，所以我们可以去拉流
                 if (con->GetStreamAddres().empty())  //异常
                 {
                     printf("目标正在推流，但是流地址异常\n");

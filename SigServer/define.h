@@ -237,9 +237,9 @@ struct Key_body : public packet_head
         cmd = KEY;
         len = sizeof(Key_body);
     }
-    //键值和类型
-    uint16_t key;
+    //包体先存操作类型，再存键值
     MouseKeyType type;
+    uint16_t key;
 };
 
 //滚轮消息
@@ -250,8 +250,8 @@ struct Wheel_body : public packet_head
         cmd = WHEEL;
         len = sizeof(Wheel_body);
     }
-    //值
-    uint8_t wheel;
+    //滚轮方向，+1 向上，-1 向下
+    int8_t wheel;
 };
 
 //鼠标移动
