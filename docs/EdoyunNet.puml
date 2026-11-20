@@ -1,0 +1,236 @@
+@startuml EdoyunNet
+title EdoyunNet UML 类图
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam ArrowColor #475569
+skinparam packageStyle rectangle
+skinparam packageBorderColor #94A3B8
+skinparam classBackgroundColor #F8FAFC
+skinparam classBorderColor #64748B
+hide empty members
+
+package "构建与示例" #F1F5F9 {
+    class "CMakeLists.txt\n<size:11>EdoyunNet (STATIC) · PUBLIC Threads::Threads</size>\n<size:11>编译 10 个 .cpp，排除 main.cpp</size>" as Build <<artifact>>
+    class "main.cpp\n<size:11>示例入口 main() · EventLoop(2)</size>" as Demo <<artifact>>
+    Build -[hidden]right- Demo
+}
+
+package "TCP 服务与套接字" #EDF5FF {
+    class "TcpServer\n<size:11>TcpServer.h / TcpServer.cpp</size>" as TcpServer {
+        + Start(ip, port): bool
+        + Stop(): void
+        + GetIPAddres(): string
+        + GetPort(): uint16_t
+        # OnConnect(fd): TcpConnection::Ptr
+        # AddConnection(fd, conn): void
+        # RemoveConnection(fd): void
+    }
+
+    class "Acceptor\n<size:11>Acceptor.h / Acceptor.cpp</size>" as Acceptor {
+        - new_connectCb_: NewConnectCallback
+        + SetNewConnectCallback(cb): void
+        + Listen(ip, port): int
+        + Close(): void
+        - OnAccept(): void
+    }
+
+    class "TcpSocket\n<size:11>TcpSocket.h / TcpSocket.cpp</size>" as TcpSocket {
+        - sockfd_: int
+        + Create(): int
+        + Bind(ip, port): bool
+        + Listen(backlog): bool
+        + Accept(): int
+        + Close(): void
+        + ShutdownWrite(): void
+        + GetSocket(): int
+    }
+
+    class "SocketUtil\n<size:11>TcpSocket.h / TcpSocket.cpp</size>" as SocketUtil <<工具类>> {
+        {static} + SetNonBlock(fd): void
+        {static} + SetBlock(fd): void
+        {static} + SetReuseAddr(fd): void
+        {static} + SetReusePort(fd): void
+        {static} + SetKeepAlive(fd): void
+        {static} + SetSendBufSize(fd, size): void
+        {static} + SetRecvBufSize(fd, size): void
+    }
+
+    class "TcpConnection\n<size:11>TcpConnection.h / TcpConnection.cpp</size>" as TcpConnection {
+        # is_closed_: bool
+        - readCb_: ReadCallback
+        - closeCb_: CloseCallback
+        - disconnectCb_: DisConnectCallback
+        + GetTaskSchduler(): TaskScheduler*
+        + GetSocket(): int
+        + IsClosed(): bool
+        + SetReadCallback(cb): void
+        + SetCloseCallback(cb): void
+        + Send(shared_ptr<char>, size): void
+        + Send(const char*, size): void
+        + DisConnect(): void
+        # SetDisConnectCallback(cb): void
+        # HandleRead(), HandleWrite(): void
+        # HandleClose(), HandleError(): void
+        - Close(): void
+    }
+
+    class "std::enable_shared_from_this" as SharedBase<TcpConnection> <<标准库>>
+}
+
+package "事件循环与定时器" #ECF9F5 {
+    class "EventLoop\n<size:11>EventLoop.h / EventLoop.cpp</size>" as EventLoop {
+        - threads_: vector<shared_ptr<thread>>
+        + Loop(): void
+        + Quit(): void
+        + GetTaskSchduler(): shared_ptr<TaskScheduler>
+        + AddTimer(event, mesc): TimerId
+        + RemvoTimer(timerId): void
+        + UpdateChannel(channel): void
+        + RmoveChannel(channel): void
+    }
+
+    class "TaskScheduler\n<size:11>TaskScheduler.h / TaskScheduler.cpp</size>" as TaskScheduler {
+        - is_shutdown_: atomic_bool
+        + Start(): void
+        + Stop(): void
+        + AddTimer(event, mesc): TimerId
+        + RemvoTimer(timerId): void
+        + virtual UpdateChannel(channel): void
+        + virtual RmoveChannel(channel): void
+        + virtual HandleEvent(): bool
+    }
+
+    class "EpollTaskScheduler\n<size:11>EpoolTaskScheduler.h / EpoolTaskScheduler.cpp</size>" as EpollTaskScheduler {
+        - epollfd_: int
+        + UpdateChannel(channel): void
+        + RmoveChannel(channel): void
+        + HandleEvent(): bool
+        # Update(operation, channel): void
+    }
+
+    class "Channel\n<size:11>Channel.h</size>" as Channel {
+        - sockfd_: int
+        - events_: int
+        - read_callback_, write_callback_: EventCallback
+        - close_callback_, error_callback_: EventCallback
+        + SetReadCallback(cb), SetWriteCallback(cb): void
+        + SetCloseCallback(cb), SetErrorCallback(cb): void
+        + GetSocket(), GetEvents(): int
+        + SetEvents(events): void
+        + EnableReading(), DisableReading(): void
+        + EnableWriting(), DisableWriting(): void
+        + IsNoneEvent(), IsWriting(), IsReading(): bool
+        + HandleEvent(events): void
+    }
+
+    enum "EventType\n<size:11>Channel.h</size>" as EventType {
+        EVENT_NONE = 0
+        EVENT_IN = 1
+        EVENT_PRI = 2
+        EVENT_OUT = 4
+        EVENT_ERR = 8
+        EVENT_HUP = 16
+    }
+
+    class "TimerQueue\n<size:11>Timer.h / Timer.cpp</size>" as TimerQueue {
+        + AddTimer(event, mesc): TimerId
+        + RemoveTimer(timerId): void
+        + HandleTimerEvent(): void
+        # GetTimeNow(): int64_t
+    }
+
+    class "Timer\n<size:11>Timer.h / Timer.cpp</size>" as Timer {
+        - interval_: uint32_t
+        - next_timeout_: uint64_t
+        - evenrt_callbak_: TimerEvent
+        {static} + Sleep(mesc): void
+        - SetNextTimeOut(time_point): void
+        - getNextTimeOut(): int64_t
+    }
+}
+
+package "收发缓冲与字节序" #FFF8EA {
+    class "BufferReader\n<size:11>BufferReader.h / BufferReader.cpp</size>" as BufferReader {
+        - buffer_: vector<char>
+        - reader_index_: size_t
+        - writer_index_: size_t
+        + Read(fd): int
+        + ReadAll(data): uint32_t
+        + ReadableBytes(), WritableBytes(), Size(): uint32_t
+        + Peek(): char*
+        + Peek() const: const char*
+        + Retrieve(len), RetrieveAll(): void
+    }
+
+    class "BufferWriter\n<size:11>BufferWriter.h / BufferWriter.cpp</size>" as BufferWriter {
+        - max_queue_length_: int
+        + Append(shared_ptr<char>, size, index): bool
+        + Append(const char*, size, index): bool
+        + Send(sockfd): int
+        + IsEmpty(), IsFull(): bool
+        + Size(): uint32_t
+    }
+
+    class "BufferWriter::Packet\n<size:11>BufferWriter.h</size>" as Packet <<私有结构体>> {
+        + data: shared_ptr<char>
+        + size: uint32_t
+        + writeIndex: uint32_t
+    }
+
+    class "字节序辅助函数" as ByteOrder <<函数组>> {
+        ReadUint16BE / ReadUint16LE
+        ReadUint24BE / ReadUint24LE
+        ReadUint32BE / ReadUint32LE
+        --
+        WriteUint16BE / WriteUint16LE
+        WriteUint24BE / WriteUint24LE
+        WriteUint32BE / WriteUint32LE
+    }
+    BufferReader -[hidden]down- ByteOrder
+}
+
+Demo ..> EventLoop : 创建
+Demo ..> TcpServer : 创建并启停
+TcpServer --> EventLoop : loop_
+TcpServer *-- "1" Acceptor : acceptor_\n注册接入回调
+TcpServer o-- "0..*" TcpConnection : connects_\n注册断连回调
+Acceptor --> EventLoop : loop_
+Acceptor o-- "1" TcpSocket : tcp_socket_
+Acceptor o-- "0..1" Channel : channelPtr_\n读事件触发 OnAccept()
+Acceptor ..> SocketUtil : 设置监听 fd
+
+TcpConnection -up-|> SharedBase
+TcpConnection --> TaskScheduler : task_schduler_
+TcpConnection o-- "1" Channel : channel_\n绑定读／写／关闭／错误回调
+TcpConnection ..> SocketUtil : 设置连接 fd
+TcpConnection *-- "1" BufferReader : read_buffer_
+TcpConnection *-- "1" BufferWriter : write_buffer_
+BufferWriter *-- "0..*" Packet : buffer_
+
+EventLoop o-- "0..*" TaskScheduler : task_schdulers_
+EventLoop ..> EpollTaskScheduler : Loop() 创建
+EventLoop ..> Channel : 注册／移除参数
+TaskScheduler ..> Channel : 注册／移除参数
+TaskScheduler *-- "1" TimerQueue : timer_queue_
+EpollTaskScheduler -right-|> TaskScheduler
+EpollTaskScheduler o-- "0..*" Channel : channels_\n分发 HandleEvent()
+Channel ..> EventType : 事件位掩码
+TimerQueue o-- "0..*" Timer : timers_ / events_\n索引同一批对象
+
+legend bottom left
+  **关系**  实心菱形＝值成员或 unique_ptr　空心菱形＝shared_ptr 持有　实线箭头＝非拥有引用　虚线箭头＝依赖　空心三角＝继承
+  **接入**  TcpServer::Start → Acceptor::Listen → EventLoop::UpdateChannel → 第一个调度器。监听事件触发 OnAccept → TcpSocket::Accept → new_connectCb_ → TcpServer::OnConnect。
+  **调度**  EventLoop 构造时调用 Loop，为每个 EpollTaskScheduler 启动一个线程。OnConnect 经 GetTaskSchduler 轮询选择调度器。
+  **事件**  TaskScheduler::Start 每轮先处理 TimerQueue，再调用虚函数 HandleEvent。EpollTaskScheduler 经 epoll_ctl 管理事件，epoll_wait 取事件，Channel::HandleEvent 分发回调。
+  **套接字**  TcpSocket 封装 socket、bind、listen、accept 等调用。SocketUtil 通过 fcntl 和 setsockopt 设置 fd。
+  **收发**  HandleRead 经 BufferReader::Read 调用 recv。Send 入队后尝试写入，BufferWriter::Send 调用 send，短写保留 Packet::writeIndex，队列未清空时关注写事件。
+  **关闭**  TcpConnection::Close 移除 Channel 并依次调用关闭和断连回调。TcpServer 的断连回调移除 connects_ 中的连接。TcpConnection 的析构函数关闭 socket fd。
+  **定时器**  EventLoop 把定时器操作转给第一个调度器。TimerQueue 用 steady_clock 获取时间并按到期时间处理 TimerEvent，回调返回 true 时重排，返回 false 时移除。
+  **友元**  TcpServer 可设置 TcpConnection 的保护成员 SetDisConnectCallback。TimerQueue 可访问 Timer 的私有回调和超时信息。
+  **别名**  ChannelPtr＝shared_ptr<Channel>，Channel::EventCallback＝function<void()>，NewConnectCallback＝function<void(int)>。
+  **别名**  TimerId＝uint32_t，TimerEvent＝function<bool()>，TcpConnection::Ptr＝shared_ptr<TcpConnection>。
+  **别名**  TcpConnection::ReadCallback＝function<bool(Ptr, BufferReader&)>，CloseCallback 和 DisConnectCallback 均为 function<void(Ptr)>。
+  覆盖 EdoyunNet 的 23 个文件。类框列出业务接口及关键成员，构造／析构声明、#include 和完整分支留在源码中。
+endlegend
+@enduml
