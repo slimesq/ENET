@@ -101,7 +101,7 @@ package "事件循环与定时器" #ECF9F5 {
         + virtual HandleEvent(): bool
     }
 
-    class "EpollTaskScheduler\n<size:11>EpoolTaskScheduler.h / EpoolTaskScheduler.cpp</size>" as EpollTaskScheduler {
+    class "EpollTaskScheduler\n<size:11>EpollTaskScheduler.h / EpollTaskScheduler.cpp</size>" as EpollTaskScheduler {
         - epollfd_: int
         + UpdateChannel(channel): void
         + RmoveChannel(channel): void

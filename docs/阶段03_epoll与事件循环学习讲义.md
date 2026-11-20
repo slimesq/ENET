@@ -21,12 +21,10 @@
 | [TcpSocket.h](../EdoyunNet/TcpSocket.h)、[TcpSocket.cpp](../EdoyunNet/TcpSocket.cpp) | socket 封装与 `SocketUtil`；后者也定义在这两个文件中 |
 | [EventLoop.h](../EdoyunNet/EventLoop.h)、[EventLoop.cpp](../EdoyunNet/EventLoop.cpp) | 创建线程、持有调度器、选择调度器与基本退出顺序 |
 | [TaskScheduler.h](../EdoyunNet/TaskScheduler.h)、[TaskScheduler.cpp](../EdoyunNet/TaskScheduler.cpp) | 工作循环、停止标志、定时器调用位置 |
-| [EpoolTaskScheduler.h](../EdoyunNet/EpoolTaskScheduler.h)、[EpoolTaskScheduler.cpp](../EdoyunNet/EpoolTaskScheduler.cpp) | epoll fd、Channel 表、注册和事件分发 |
+| [EpollTaskScheduler.h](../EdoyunNet/EpollTaskScheduler.h)、[EpollTaskScheduler.cpp](../EdoyunNet/EpollTaskScheduler.cpp) | epoll fd、Channel 表、注册和事件分发 |
 | [Channel.h](../EdoyunNet/Channel.h) | fd、关注事件、读写及关闭回调 |
 | [Acceptor.cpp](../EdoyunNet/Acceptor.cpp)、[TcpServer.cpp](../EdoyunNet/TcpServer.cpp) | 监听接入与新连接交接 |
 | [TcpConnection.cpp](../EdoyunNet/TcpConnection.cpp) | 连接 Channel 怎样注册到选中的调度器 |
-
-文件名保留了 `EpoolTaskScheduler` 的拼写，类名则是 `EpollTaskScheduler`，检索时分别使用真实名称。
 
 ### 1.1 并发知识只补当前缺口
 
@@ -172,7 +170,7 @@ I/O 回调也在这条调用链上同步执行；没有额外的业务任务队�
 
 ### 4.2 ADD、MOD、DEL 怎样选择
 
-[EpollTaskScheduler::UpdateChannel()](../EdoyunNet/EpoolTaskScheduler.cpp) 先查询 `channels_` 是否已有该 fd：
+[EpollTaskScheduler::UpdateChannel()](../EdoyunNet/EpollTaskScheduler.cpp) 先查询 `channels_` 是否已有该 fd：
 
 | 表中是否已有 fd | Channel 是否仍关注事件 | 当前操作 |
 | --- | --- | --- |
